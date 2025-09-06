@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Smart Store Tracker -Customer traffic heatmap and analytics</title>
+    <title>Smart Store Tracker - Customer traffic heatmap and analytics</title>
     <script src="https://cdn.tailwindcss.com/3.4.16"></script>
     <script>tailwind.config={theme:{extend:{colors:{primary:'#57B5E7',secondary:'#8DD3C7'},borderRadius:{'none':'0px','sm':'4px',DEFAULT:'8px','md':'12px','lg':'16px','xl':'20px','2xl':'24px','3xl':'32px','full':'9999px','button':'8px'}}}}</script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -11,228 +11,434 @@
     <link href="https://fonts.googleapis.com/css2?family=Pacifico&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/remixicon/4.6.0/remixicon.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/echarts/5.5.0/echarts.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-    /*To  edit for the mobile responsive */
-/* ===== Responsive Dashboard ===== */
-@media (max-width: 768px) {
-  .dashboard {
-    flex-direction: column; /* stack sections vertically */
-  }
-
-  .card {
-    width: 100%;
-    margin-bottom: 15px;
-  }
-
-  #radarChart {
-    max-width: 100% !important;
-    max-height: 300px;
-  }
-}
-
-@media (max-width: 480px) {
-  h1, h2, h3 {
-    font-size: 1rem; /* smaller headings */
-  }
-
-  .card {
-    padding: 10px;
-  }
-
-  #radarChart {
-    max-height: 250px;
-  }
-}
-
-
-        :where([class^="ri-"])::before { content: "\f3c2"; }
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background: #f7f7f7;
+        }
+        
+        /* Desktop Layout */
+        .main-layout {
+            display: flex;
+            min-height: 100vh;
+            flex-direction: row;
+        }
+        
+        .sidebar {
+            flex: 0 0 320px;
+            background: #e9ecef;
+            border-right: 1px solid #ddd;
+        }
+        
+        .main-content {
+            flex: 1;
+            padding: 24px;
+            background: #fff;
+        }
+        
+        /* Mobile Responsive Styles */
+        @media (max-width: 768px) {
+            .main-layout {
+                display: block !important;
+                flex-direction: column !important;
+            }
+            
+            .sidebar {
+                flex: none !important;
+                width: 100% !important;
+                position: static !important;
+                border-right: none !important;
+                border-bottom: 1px solid #ddd;
+            }
+            
+            .main-content {
+                padding: 16px 12px !important;
+            }
+            
+            /* Stack all grid layouts vertically */
+            .grid {
+                display: block !important;
+            }
+            
+            .grid > * {
+                margin-bottom: 16px !important;
+            }
+            
+            /* Make charts responsive */
+            .chart-container {
+                height: 200px !important;
+            }
+            
+            /* Adjust card padding for mobile */
+            .card {
+                padding: 16px !important;
+                margin-bottom: 16px !important;
+            }
+            
+            /* Make tables scroll horizontally */
+            .table-container {
+                overflow-x: auto !important;
+                -webkit-overflow-scrolling: touch;
+            }
+            
+            /* Adjust modal for mobile */
+            .modal-content {
+                margin: 20px !important;
+                max-height: 80vh !important;
+                overflow-y: auto !important;
+            }
+            
+            /* Stack form elements vertically */
+            .form-row {
+                flex-direction: column !important;
+                gap: 8px !important;
+            }
+            
+            .form-row > * {
+                width: 100% !important;
+            }
+            
+            /* Adjust button sizes for touch */
+            button {
+                min-height: 44px !important;
+                padding: 12px 16px !important;
+            }
+            
+            /* Make select dropdowns touch-friendly */
+            select {
+                min-height: 44px !important;
+                padding: 12px !important;
+            }
+            
+            /* Adjust input sizes */
+            input[type="range"] {
+                height: 44px !important;
+            }
+            
+            input[type="number"] {
+                min-height: 44px !important;
+                padding: 12px !important;
+            }
+        }
+        
+        /* Extra small screens */
+        @media (max-width: 480px) {
+            .main-content {
+                padding: 12px 8px !important;
+            }
+            
+            .card {
+                padding: 12px !important;
+            }
+            
+            h1 {
+                font-size: 1.5rem !important;
+            }
+            
+            h3 {
+                font-size: 1.1rem !important;
+            }
+            
+            .modal-content {
+                margin: 10px !important;
+            }
+        }
+        
         #radarChart {
-  max-width: 400px;
-  max-height: 400px;
-  margin: 0 auto; /* centers it */
-}
-
+            max-width: 100%;
+            max-height: 300px;
+            margin: 0 auto;
+        }
+        
+        @media (max-width: 768px) {
+            #radarChart {
+                max-height: 250px;
+            }
+        }
     </style>
 </head>
-        <!-- Header: Application Title -->
-    <!-- Backend: Flask route can serve this HTML template -->
-    <header class="w-full bg-white py-4 px-4 md:px-8 flex items-center">
-            <h1 class="text-2xl md:text-3xl font-bold tracking-wide text-black" style="font-family: 'Times New Roman', Times, serif;">Smart Store Tracker</h1>
-        </header>
-        <!-- Main Dashboard Layout -->
-    <div class="grid grid-cols-1 lg:grid-cols-[auto,1fr] w-full min-h-screen space-y-6 lg:space-y-0">
-            <!-- Sidebar: Quick Overview -->
-            <aside class="fixed top-0 left-0 w-full z-20 bg-white shadow-sm lg:static lg:w-64 lg:h-screen">
-                <div class="p-6">
+<body>
+    <!-- Header: Application Title -->
+    <header class="w-full bg-white py-4 px-4 md:px-8 flex items-center shadow-sm sticky top-0 z-50">
+        <h1 class="text-xl md:text-2xl lg:text-3xl font-bold tracking-wide text-black" style="font-family: 'Times New Roman', Times, serif;">Smart Store Tracker</h1>
+    </header>
+
+    <div class="main-layout">
+        <!-- Sidebar: Quick Overview -->
+        <aside class="sidebar">
+            <div class="p-6">
+                <div class="space-y-6">
+                    <div>
+                        <h3 class="text-sm font-medium text-gray-900 mb-3">Quick Overview</h3>
+                        <div class="space-y-3">
+                            <div class="bg-gray-50 rounded-lg p-3">
+                                <div class="flex items-center justify-between">
+                                    <span class="text-sm text-gray-600">Current Customers</span>
+                                    <span class="text-lg font-semibold text-gray-900">127</span>
+                                </div>
+                            </div>
+                            <div class="bg-gray-50 rounded-lg p-3">
+                                <div class="flex items-center justify-between">
+                                    <span class="text-sm text-gray-600">Today's Peak</span>
+                                    <span class="text-lg font-semibold text-gray-900">284</span>
+                                </div>
+                            </div>
+                            <div class="bg-gray-50 rounded-lg p-3">
+                                <div class="flex items-center justify-between">
+                                    <span class="text-sm text-gray-600">Avg. Dwell Time</span>
+                                    <span class="text-lg font-semibold text-gray-900">12m</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mt-4 flex justify-center">
+                            <button id="logsBtn" class="px-4 py-2 rounded-lg bg-primary text-white font-semibold shadow hover:bg-blue-600 transition">Logs</button>
+                        </div>
+                    </div>
+                    <div>
+                        <h3 class="text-sm font-medium text-gray-900 mb-3">System Status</h3>
+                        <div class="space-y-2">
+                            <div class="flex items-center justify-between">
+                                <span class="text-sm text-gray-600">Sensors Online</span>
+                                <span class="text-sm font-medium text-green-600">8/8</span>
+                            </div>
+                            <div class="flex items-center justify-between">
+                                <span class="text-sm text-gray-600">Battery Low</span>
+                                <span class="text-sm font-medium text-orange-600">2</span>
+                            </div>
+                            <div class="flex items-center justify-between">
+                                <span class="text-sm text-gray-600">Maintenance</span>
+                                <span class="text-sm font-medium text-gray-600">0</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div>
+                        <h3 class="text-sm font-medium text-gray-900 mb-3">Recent Alerts</h3>
+                        <div class="space-y-2">
+                            <div class="text-xs text-orange-600 bg-orange-50 rounded p-2">
+                                Battery low in Footwear section
+                            </div>
+                            <div class="text-xs text-blue-600 bg-blue-50 rounded p-2">
+                                Peak traffic detected in Electronics
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Charts Section -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+                <div class="card bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4">Real-time Traffic</h3>
+                    <div class="chart-container h-48" id="trafficChart"></div>
+                </div>
+                <div class="card bg-white rounded-lg shadow-sm border border-gray-200 p-6" id="sensor-network">
+                    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 gap-3">
+                        <h3 class="text-lg font-semibold text-gray-900">Sensor Network Overview</h3>
+                        <div class="flex items-center space-x-3">
+                            <select id="sensorFilter" class="border border-gray-300 rounded-lg px-3 py-2 text-sm flex-1 sm:flex-none">
+                                <option value="ENT-01">Frozen & Cold</option>
+                                <option value="ELC-01">Dry & Packaged Goods</option>
+                                <option value="CLO-01">Household & Non Food</option>
+                                <option value="CHK-01">Healthy & Speciality</option>
+                                <option value="PHR-01">Fresh & Perishables</option>
+                                <option value="GRC-01">Extra Food & Drinks</option>
+                                <option value="FTW-01">Lifestyle & Seasonal</option>
+                            </select>
+                            <button id="refreshBtn" class="text-gray-600 hover:text-gray-900 p-2 border border-gray-300 rounded-lg" type="button">
+                                <div class="w-5 h-5 flex items-center justify-center">
+                                    <i class="ri-refresh-line"></i>
+                                </div>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-1 gap-4" id="sensorCardContainer">
+                        <!-- Sensor card will be rendered here dynamically -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Radar Chart Section -->
+            <div class="card bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4 text-center">Sensor Performance Radar</h3>
+                <div class="flex justify-center">
+                    <canvas id="radarChart" width="300" height="300"></canvas>
+                </div>
+            </div>
+
+            <!-- Configuration and Analytics Section -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <!-- Sensor Configuration -->
+                <div class="card bg-white rounded-lg shadow-sm border border-gray-200 p-6" id="sensor-config">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-lg font-semibold text-gray-900">Sensor Configuration</h3>
+                        <button class="text-primary text-sm font-medium">Configure</button>
+                    </div>
                     <div class="space-y-6">
                         <div>
-                            <h3 class="text-sm font-medium text-gray-900 mb-3">Quick Overview</h3>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Detection Range (meters)</label>
+                            <div class="relative">
+                                <input type="range" min="1" max="10" value="5" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer" id="rangeSlider">
+                                <div class="flex justify-between text-xs text-gray-500 mt-1">
+                                    <span>1m</span>
+                                    <span>10m</span>
+                                </div>
+                            </div>
+                            <div class="mt-2 text-sm text-gray-600">Current: <span id="rangeValue">5</span>m</div>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Sampling Frequency</label>
+                            <div class="grid grid-cols-3 gap-2">
+                                <button class="px-3 py-2 text-sm border border-gray-300 rounded-lg hover:bg-gray-50" onclick="selectFrequency(this)">1 Hz</button>
+                                <button class="px-3 py-2 text-sm border border-primary bg-primary/10 text-primary rounded-lg" onclick="selectFrequency(this)">5 Hz</button>
+                                <button class="px-3 py-2 text-sm border border-gray-300 rounded-lg hover:bg-gray-50" onclick="selectFrequency(this)">10 Hz</button>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Alert Thresholds</label>
                             <div class="space-y-3">
-                                <div class="bg-gray-50 rounded-lg p-3">
-                                    <div class="flex items-center justify-between">
-                                        <span class="text-sm text-gray-600">Current Customers</span>
-                                        <span class="text-lg font-semibold text-gray-900">127</span>
+                                <div class="form-row flex items-center justify-between">
+                                    <span class="text-sm text-gray-600">Low Battery Warning</span>
+                                    <div class="flex items-center space-x-2">
+                                        <input type="number" value="20" class="w-16 px-2 py-1 border border-gray-300 rounded text-sm text-center">
+                                        <span class="text-sm text-gray-600">%</span>
                                     </div>
                                 </div>
-                                <div class="bg-gray-50 rounded-lg p-3">
-                                    <div class="flex items-center justify-between">
-                                        <span class="text-sm text-gray-600">Today's Peak</span>
-                                        <span class="text-lg font-semibold text-gray-900">284</span>
-                                    </div>
-                                </div>
-                                <div class="bg-gray-50 rounded-lg p-3">
-                                    <div class="flex items-center justify-between">
-                                        <span class="text-sm text-gray-600">Avg. Dwell Time</span>
-                                        <span class="text-lg font-semibold text-gray-900">12m</span>
+                                <div class="form-row flex items-center justify-between">
+                                    <span class="text-sm text-gray-600">High Traffic Alert</span>
+                                    <div class="flex items-center space-x-2">
+                                        <input type="number" value="50" class="w-16 px-2 py-1 border border-gray-300 rounded text-sm text-center">
+                                        <span class="text-sm text-gray-600">people</span>
                                     </div>
                                 </div>
                             </div>
-                            <div class="mt-4 flex justify-center">
-                                <button id="logsBtn" class="px-4 py-2 rounded-lg bg-primary text-white font-semibold shadow hover:bg-blue-600 transition">Logs</button>
-                            </div>
                         </div>
-                        <div>
-                            <h3 class="text-sm font-medium text-gray-900 mb-3">System Status</h3>
-                            <div class="space-y-2">
-                                <div class="flex items-center justify-between">
-                                    <span class="text-sm text-gray-600">Sensors Online</span>
-                                    <span class="text-sm font-medium text-green-600">8/8</span>
-                                </div>
-                                <div class="flex items-center justify-between">
-                                    <span class="text-sm text-gray-600">Battery Low</span>
-                                    <span class="text-sm font-medium text-orange-600">2</span>
-                                </div>
-                                <div class="flex items-center justify-between">
-                                    <span class="text-sm text-gray-600">Maintenance</span>
-                                    <span class="text-sm font-medium text-gray-600">0</span>
-                                </div>
-                            </div>
-                        </div>
-                        <div>
-                            <h3 class="text-sm font-medium text-gray-900 mb-3">Recent Alerts</h3>
-                            <div class="space-y-2">
-                                <div class="text-xs text-orange-600 bg-orange-50 rounded p-2">
-                                    Battery low in Footwear section
-                                </div>
-                                <div class="text-xs text-blue-600 bg-blue-50 rounded p-2">
-                                    Peak traffic detected in Electronics
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </aside>
-
-            <!-- Main Content: Right side -->
-            <main class="flex-1 p-6">
-                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-                    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                        <h3 class="text-lg font-semibold text-gray-900 mb-4">Real-time Traffic</h3>
-                        <div class="h-48" id="trafficChart"></div>
-                    </div>
-                    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6" id="sensor-network">
-                        <div class="flex items-center justify-between mb-4">
-                            <h3 class="text-lg font-semibold text-gray-900">Sensor Network Overview</h3>
-                            <div class="flex items-center space-x-3">
-                                <select id="sensorFilter" class="border border-gray-300 rounded-lg px-3 py-2 text-sm pr-8">
-                                    <option value="ENT-01">Frozen  & Cold</option>
-                                    <option value="ELC-01">Dry & Packaged Goods</option>
-                                    <option value="CLO-01">Household & Non Food</option>
-                                    <option value="CHK-01">Healthy & Speciality</option>
-                                    <option value="PHR-01">Fresh & Perishables</option>
-                                    <option value="GRC-01">Extra Food & Drinks</option>
-                                    <option value="FTW-01">Lifestyle & Seasonal</option>
-                                </select>
-                                <button id="refreshBtn" class="text-gray-600 hover:text-gray-900 p-2" type="button">
-                                    <div class="w-5 h-5 flex items-center justify-center">
-                                        <i class="ri-refresh-line"></i>
-                                    </div>
-                                </button>
-                            </div>
-                        </div>
-                        <div class="grid grid-cols-1 gap-4" id="sensorCardContainer">
-                            <!-- Sensor card will be rendered here dynamically -->
+                        <div class="flex flex-col sm:flex-row items-center space-y-2 sm:space-y-0 sm:space-x-3 pt-4">
+                            <button id="saveConfigBtn" class="w-full sm:flex-1 bg-primary text-white py-2 px-4 rounded-button font-medium">Save Configuration</button>
+                            <button id="resetConfigBtn" class="w-full sm:w-auto px-4 py-2 border border-gray-300 text-gray-700 rounded-button font-medium">Reset</button>
                         </div>
                     </div>
                 </div>
 
-                <!-- Only one Sensor Configuration and one Analytics section -->
-<!--Edited-------------- -->
-<div class="card" style="max-width: 400px; margin: 20px auto;">
-    <h3>Sensor Performance Radar</h3>
-    <canvas id="radarChart" width="300" height="300"></canvas>
-  </div>
-  
-                  
-                <div class="flex flex-col lg:flex-row gap-6">
-                    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 flex-1" id="sensor-config">
-                        <div class="flex items-center justify-between mb-4">
-                            <h3 class="text-lg font-semibold text-gray-900">Sensor Configuration</h3>
-                            <button class="text-primary text-sm font-medium">Configure</button>
+                <!-- System Analytics -->
+                <div class="card bg-white rounded-lg shadow-sm border border-gray-200 p-6" id="system-analytics">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4">Sensor Analytics</h3>
+                    <div class="chart-container h-64" id="analyticsChart"></div>
+                    <div class="mt-4 grid grid-cols-2 gap-4">
+                        <div class="text-center">
+                            <div class="text-2xl font-bold text-gray-900">98.7%</div>
+                            <div class="text-sm text-gray-600">Uptime</div>
                         </div>
-                        <div class="space-y-6">
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">Detection Range (meters)</label>
-                                <div class="relative">
-                                    <input type="range" min="1" max="10" value="5" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer" id="rangeSlider">
-                                    <div class="flex justify-between text-xs text-gray-500 mt-1">
-                                        <span>1m</span>
-                                        <span>10m</span>
-                                    </div>
-                                </div>
-                                <div class="mt-2 text-sm text-gray-600">Current: <span id="rangeValue">5</span>m</div>
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">Sampling Frequency</label>
-                                <div class="grid grid-cols-3 gap-2">
-                                    <button class="px-3 py-2 text-sm border border-gray-300 rounded-lg hover:bg-gray-50" onclick="selectFrequency(this)">1 Hz</button>
-                                    <button class="px-3 py-2 text-sm border border-primary bg-primary/10 text-primary rounded-lg" onclick="selectFrequency(this)">5 Hz</button>
-                                    <button class="px-3 py-2 text-sm border border-gray-300 rounded-lg hover:bg-gray-50" onclick="selectFrequency(this)">10 Hz</button>
-                                </div>
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">Alert Thresholds</label>
-                                <div class="space-y-3">
-                                    <div class="flex items-center justify-between">
-                                        <span class="text-sm text-gray-600">Low Battery Warning</span>
-                                        <div class="flex items-center space-x-2">
-                                            <input type="number" value="20" class="w-16 px-2 py-1 border border-gray-300 rounded text-sm text-center">
-                                            <span class="text-sm text-gray-600">%</span>
-                                        </div>
-                                    </div>
-                                    <div class="flex items-center justify-between">
-                                        <span class="text-sm text-gray-600">High Traffic Alert</span>
-                                        <div class="flex items-center space-x-2">
-                                            <input type="number" value="50" class="w-16 px-2 py-1 border border-gray-300 rounded text-sm text-center">
-                                            <span class="text-sm text-gray-600">people</span>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="flex items-center space-x-3 pt-4">
-                                <button id="saveConfigBtn" class="flex-1 bg-primary text-white py-2 px-4 rounded-button font-medium whitespace-nowrap !rounded-button">Save Configuration</button>
-                                <button id="resetConfigBtn" class="px-4 py-2 border border-gray-300 text-gray-700 rounded-button font-medium whitespace-nowrap !rounded-button">Reset</button>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 flex-1" id="system-analytics">
-                        <h3 class="text-lg font-semibold text-gray-900 mb-4">Sensor Analytics</h3>
-                        <div class="h-64" id="analyticsChart"></div>
-                        <div class="mt-4 grid grid-cols-2 gap-4">
-                            <div class="text-center">
-                                <div class="text-2xl font-bold text-gray-900">98.7%</div>
-                                <div class="text-sm text-gray-600">Uptime</div>
-                            </div>
-                            <div class="text-center">
-                                <div class="text-2xl font-bold text-gray-900">2.3s</div>
-                                <div class="text-sm text-gray-600">Avg Response</div>
-                            </div>
+                        <div class="text-center">
+                            <div class="text-2xl font-bold text-gray-900">2.3s</div>
+                            <div class="text-sm text-gray-600">Avg Response</div>
                         </div>
                     </div>
                 </div>
+            </div>
+        </main>
+    </div>
 
+    <!-- Logs Modal -->
+    <div id="logsModal" style="display:none; position:fixed; inset:0; width:100vw; height:100vh; background:rgba(0,0,0,0.7); z-index:99999; align-items:center; justify-content:center;">
+        <div class="modal-content" style="background:#fff; color:#222; padding:32px; border-radius:18px; min-width:340px; max-width:96vw; max-height:80vh; box-shadow:0 12px 48px rgba(0,0,0,0.35); position:relative; overflow:auto;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:18px;">
+                <h3 style="margin:0; font-size:1.35rem; font-weight:600; color:#2563eb;">Sensor Area Daily Logs</h3>
+                <button id="closeModal" style="background:none; border:none; color:#2563eb; font-size:2rem; cursor:pointer; line-height:1;">&times;</button>
+            </div>
+            <div style="margin-bottom:16px; display:flex; flex-wrap:wrap; align-items:center; gap:12px;">
+                <label for="logDateSearch" style="font-weight:500; color:#2563eb;">Search by Date:</label>
+                <input type="date" id="logDateSearch" style="padding:6px 12px; border:1px solid #e5e7eb; border-radius:6px; font-size:1rem; flex:1; min-width:150px;">
+                <button id="searchLogsBtn" style="padding:6px 18px; background:#2563eb; color:#fff; border:none; border-radius:6px; font-size:1rem; font-weight:500; cursor:pointer;">Search</button>
+                <button id="showAllLogsBtn" style="padding:6px 18px; background:#8DD3C7; color:#222; border:none; border-radius:6px; font-size:1rem; font-weight:500; cursor:pointer;">Show All</button>
+            </div>
+            <div class="table-container" style="overflow-x:auto;">
+                <table style="width:100%; border-collapse:collapse; background:#fff; color:#222; font-size:0.9rem; border-radius:10px; box-shadow:0 2px 8px rgba(0,0,0,0.08); min-width:600px;">
+                    <thead>
+                        <tr style="background:#f3f4f6; color:#2563eb;">
+                            <th style="padding:10px 8px; border-bottom:2px solid #e5e7eb; text-align:left; white-space:nowrap;">Sensor Area Name</th>
+                            <th style="padding:10px 8px; border-bottom:2px solid #e5e7eb; text-align:left; white-space:nowrap;">Date & Time</th>
+                            <th style="padding:10px 8px; border-bottom:2px solid #e5e7eb; text-align:left; white-space:nowrap;">Peak Hour</th>
+                            <th style="padding:10px 8px; border-bottom:2px solid #e5e7eb; text-align:left; white-space:nowrap;">Downtime</th>
+                            <th style="padding:10px 8px; border-bottom:2px solid #e5e7eb; text-align:left; white-space:nowrap;">Effective Distance</th>
+                            <th style="padding:10px 8px; border-bottom:2px solid #e5e7eb; text-align:left; white-space:nowrap;">Customer Count Total</th>
+                        </tr>
+                    </thead>
+                    <tbody id="logsTableBody">
+                        <tr style="background:#f9fafb;">
+                            <td style="padding:8px; border-bottom:1px solid #e5e7eb;">Frozen & Cold</td>
+                            <td style="padding:8px; border-bottom:1px solid #e5e7eb;">2025-09-05 08:00</td>
+                            <td style="padding:8px; border-bottom:1px solid #e5e7eb;">12:00-13:00</td>
+                            <td style="padding:8px; border-bottom:1px solid #e5e7eb;">None</td>
+                            <td style="padding:8px; border-bottom:1px solid #e5e7eb;">5m</td>
+                            <td style="padding:8px; border-bottom:1px solid #e5e7eb;">120</td>
+                        </tr>
+                        <tr>
+                            <td style="padding:8px; border-bottom:1px solid #e5e7eb;">Dry & Packaged Goods</td>
+                            <td style="padding:8px; border-bottom:1px solid #e5e7eb;">2025-09-05 09:00</td>
+                            <td style="padding:8px; border-bottom:1px solid #e5e7eb;">13:00-14:00</td>
+                            <td style="padding:8px; border-bottom:1px solid #e5e7eb;">5 min</td>
+                            <td style="padding:8px; border-bottom:1px solid #e5e7eb;">6m</td>
+                            <td style="padding:8px; border-bottom:1px solid #e5e7eb;">98</td>
+                        </tr>
+                        <tr style="background:#f9fafb;">
+                            <td style="padding:8px; border-bottom:1px solid #e5e7eb;">Household & Non Food</td>
+                            <td style="padding:8px; border-bottom:1px solid #e5e7eb;">2025-09-05 10:00</td>
+                            <td style="padding:8px; border-bottom:1px solid #e5e7eb;">14:00-15:00</td>
+                            <td style="padding:8px; border-bottom:1px solid #e5e7eb;">None</td>
+                            <td style="padding:8px; border-bottom:1px solid #e5e7eb;">4m</td>
+                            <td style="padding:8px; border-bottom:1px solid #e5e7eb;">76</td>
+                        </tr>
+                        <tr>
+                            <td style="padding:8px; border-bottom:1px solid #e5e7eb;">Healthy & Speciality</td>
+                            <td style="padding:8px; border-bottom:1px solid #e5e7eb;">2025-09-05 11:00</td>
+                            <td style="padding:8px; border-bottom:1px solid #e5e7eb;">15:00-16:00</td>
+                            <td style="padding:8px; border-bottom:1px solid #e5e7eb;">None</td>
+                            <td style="padding:8px; border-bottom:1px solid #e5e7eb;">2m</td>
+                            <td style="padding:8px; border-bottom:1px solid #e5e7eb;">200</td>
+                        </tr>
+                        <tr style="background:#f9fafb;">
+                            <td style="padding:8px; border-bottom:1px solid #e5e7eb;">Fresh & Perishables</td>
+                            <td style="padding:8px; border-bottom:1px solid #e5e7eb;">2025-09-05 12:00</td>
+                            <td style="padding:8px; border-bottom:1px solid #e5e7eb;">16:00-17:00</td>
+                            <td style="padding:8px; border-bottom:1px solid #e5e7eb;">None</td>
+                            <td style="padding:8px; border-bottom:1px solid #e5e7eb;">3m</td>
+                            <td style="padding:8px; border-bottom:1px solid #e5e7eb;">65</td>
+                        </tr>
+                        <tr>
+                            <td style="padding:8px; border-bottom:1px solid #e5e7eb;">Extra food & Drink</td>
+                            <td style="padding:8px; border-bottom:1px solid #e5e7eb;">2025-09-05 13:00</td>
+                            <td style="padding:8px; border-bottom:1px solid #e5e7eb;">17:00-18:00</td>
+                            <td style="padding:8px; border-bottom:1px solid #e5e7eb;">None</td>
+                            <td style="padding:8px; border-bottom:1px solid #e5e7eb;">7m</td>
+                            <td style="padding:8px; border-bottom:1px solid #e5e7eb;">150</td>
+                        </tr>
+                        <tr style="background:#f9fafb;">
+                            <td style="padding:8px; border-bottom:1px solid #e5e7eb;">Lifestyle & seasonal</td>
+                            <td style="padding:8px; border-bottom:1px solid #e5e7eb;">2025-09-05 14:00</td>
+                            <td style="padding:8px; border-bottom:1px solid #e5e7eb;">18:00-19:00</td>
+                            <td style="padding:8px; border-bottom:1px solid #e5e7eb;">None</td>
+                            <td style="padding:8px; border-bottom:1px solid #e5e7eb;">2m</td>
+                            <td style="padding:8px; border-bottom:1px solid #e5e7eb;">40</td>
+                        </tr>
+                        <tr>
+                            <td style="padding:8px; border-bottom:1px solid #e5e7eb;">Extra Services</td>
+                            <td style="padding:8px; border-bottom:1px solid #e5e7eb;">2025-09-05 15:00</td>
+                            <td style="padding:8px; border-bottom:1px solid #e5e7eb;">19:00-20:00</td>
+                            <td style="padding:8px; border-bottom:1px solid #e5e7eb;">None</td>
+                            <td style="padding:8px; border-bottom:1px solid #e5e7eb;">3m</td>
+                            <td style="padding:8px; border-bottom:1px solid #e5e7eb;">90</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
 
-    <!-- Only one traffic and analytics chart script instance -->
     <script>
         // Sensor data for cards and charts
         const sensors = {
@@ -245,7 +451,7 @@
                 analytics: [1200, 1350, 1180, 1420, 1680, 2100, 1890]
             },
             'ELC-01': {
-                name: 'Dry & Packaed Foods',
+                name: 'Dry & Packaged Foods',
                 battery: '92%',
                 signal: 4,
                 color: 'green',
@@ -285,7 +491,7 @@
                 analytics: [1300, 1350, 1400, 1450, 1500, 1550, 1600]
             },
             'FTW-01': {
-                name: 'Lifestyle  & Seasonal',
+                name: 'Lifestyle & Seasonal',
                 battery: '22%',
                 signal: 2,
                 color: 'orange',
@@ -365,6 +571,11 @@
                 }
             };
             trafficChart.setOption(trafficOption);
+            
+            // Make chart responsive
+            window.addEventListener('resize', function() {
+                trafficChart.resize();
+            });
         }
 
         function renderAnalyticsChart(sensorId) {
@@ -398,6 +609,11 @@
                 }
             };
             analyticsChart.setOption(analyticsOption);
+            
+            // Make chart responsive
+            window.addEventListener('resize', function() {
+                analyticsChart.resize();
+            });
         }
 
         function showSensor(sensorId) {
@@ -406,7 +622,17 @@
             renderAnalyticsChart(sensorId);
         }
 
+        // Range slider functionality
         document.addEventListener('DOMContentLoaded', function() {
+            const rangeSlider = document.getElementById('rangeSlider');
+            const rangeValue = document.getElementById('rangeValue');
+            
+            if (rangeSlider && rangeValue) {
+                rangeSlider.addEventListener('input', function() {
+                    rangeValue.textContent = this.value;
+                });
+            }
+
             // Show Entrance card by default
             showSensor('ENT-01');
             document.getElementById('sensorFilter').value = 'ENT-01';
@@ -414,176 +640,17 @@
             document.getElementById('sensorFilter').addEventListener('change', function() {
                 showSensor(this.value);
             });
+            
             document.getElementById('refreshBtn').addEventListener('click', function() {
                 showSensor('ENT-01');
                 document.getElementById('sensorFilter').value = 'ENT-01';
             });
-        });
-    </script>
-    </script>
 
-    <script id="rangeSlider">
-        document.addEventListener('DOMContentLoaded', function() {
-            const rangeSlider = document.getElementById('rangeSlider');
-            const rangeValue = document.getElementById('rangeValue');
+            // Logs modal functionality
+            const logsBtn = document.getElementById('logsBtn');
+            const logsModal = document.getElementById('logsModal');
+            const closeModal = document.getElementById('closeModal');
             
-            rangeSlider.addEventListener('input', function() {
-                rangeValue.textContent = this.value;
-            });
-        });
-    </script>
-
-    <script id="frequencySelector">
-        function selectFrequency(button) {
-            document.querySelectorAll('[onclick="selectFrequency(this)"]').forEach(btn => {
-                btn.className = 'px-3 py-2 text-sm border border-gray-300 rounded-lg hover:bg-gray-50';
-            });
-            button.className = 'px-3 py-2 text-sm border border-primary bg-primary/10 text-primary rounded-lg';
-        }
-    </script>
-
-    <script>
-// Sensor Configuration Save/Reset
-const rangeSlider = document.getElementById('rangeSlider');
-const freqBtns = Array.from(document.querySelectorAll('[onclick="selectFrequency(this)"]'));
-const lowBatteryInput = document.querySelector('input[type="number"][value="20"]');
-const highTrafficInput = document.querySelector('input[type="number"][value="50"]');
-let lastConfig = {};
-
-document.getElementById('saveConfigBtn').addEventListener('click', function() {
-  // Get selected frequency
-  let selectedFreq = freqBtns.find(btn => btn.className.includes('bg-primary'));
-  let freq = selectedFreq ? selectedFreq.textContent.trim() : '5 Hz';
-  // Save config to all sensors
-  allSensors.forEach(sensor => {
-    sensor.detectionRange = rangeSlider.value;
-    sensor.frequency = freq;
-    sensor.lowBattery = lowBatteryInput.value;
-    sensor.highTraffic = highTrafficInput.value;
-  });
-  // Store last config for reset
-  lastConfig = {
-    detectionRange: rangeSlider.value,
-    frequency: freq,
-    lowBattery: lowBatteryInput.value,
-    highTraffic: highTrafficInput.value
-  };
-  alert('Configuration saved for all sensors!');
-});
-document.getElementById('resetConfigBtn').addEventListener('click', function() {
-  if (Object.keys(lastConfig).length > 0) {
-    rangeSlider.value = lastConfig.detectionRange;
-    lowBatteryInput.value = lastConfig.lowBattery;
-    highTrafficInput.value = lastConfig.highTraffic;
-    freqBtns.forEach(btn => btn.className = 'px-3 py-2 text-sm border border-gray-300 rounded-lg hover:bg-gray-50');
-    let selected = freqBtns.find(btn => btn.textContent.trim() === lastConfig.frequency);
-    if (selected) selected.className = 'px-3 py-2 text-sm border border-primary bg-primary/10 text-primary rounded-lg';
-  }
-});
-    </script>
-        <!-- Logs Modal (single instance at end of body) -->
-        <div id="logsModal" style="display:none; position:fixed; inset:0; width:100vw; height:100vh; background:rgba(0,0,0,0.7); z-index:99999; align-items:center; justify-content:center;">
-            <div style="background:#fff; color:#222; padding:32px 32px; border-radius:18px; min-width:340px; max-width:96vw; max-height:80vh; box-shadow:0 12px 48px rgba(0,0,0,0.35); position:relative; overflow:auto;">
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:18px;">
-                    <h3 style="margin:0; font-size:1.35rem; font-weight:600; color:#2563eb;">Sensor Area Daily Logs</h3>
-                    <button id="closeModal" style="background:none; border:none; color:#2563eb; font-size:2rem; cursor:pointer; line-height:1;">&times;</button>
-                </div>
-                <div style="margin-bottom:16px; display:flex; align-items:center; gap:12px;">
-                    <label for="logDateSearch" style="font-weight:500; color:#2563eb;">Search by Date:</label>
-                    <input type="date" id="logDateSearch" style="padding:6px 12px; border:1px solid #e5e7eb; border-radius:6px; font-size:1rem;">
-                    <button id="searchLogsBtn" style="padding:6px 18px; background:#2563eb; color:#fff; border:none; border-radius:6px; font-size:1rem; font-weight:500; cursor:pointer;">Search</button>
-                    <button id="showAllLogsBtn" style="padding:6px 18px; background:#8DD3C7; color:#222; border:none; border-radius:6px; font-size:1rem; font-weight:500; cursor:pointer;">Show All</button>
-                </div>
-                <div style="overflow-x:auto;">
-                    <table style="width:100%; border-collapse:collapse; background:#fff; color:#222; font-size:1rem; border-radius:10px; box-shadow:0 2px 8px rgba(0,0,0,0.08);">
-                        <thead>
-                            <tr style="background:#f3f4f6; color:#2563eb;">
-                                <th style="padding:10px 8px; border-bottom:2px solid #e5e7eb; text-align:left;">Sensor Area Name</th>
-                                <th style="padding:10px 8px; border-bottom:2px solid #e5e7eb; text-align:left;">Date & Time</th>
-                                <th style="padding:10px 8px; border-bottom:2px solid #e5e7eb; text-align:left;">Peak Hour</th>
-                                <th style="padding:10px 8px; border-bottom:2px solid #e5e7eb; text-align:left;">Downtime</th>
-                                <th style="padding:10px 8px; border-bottom:2px solid #e5e7eb; text-align:left;">Effective Distance</th>
-                                <th style="padding:10px 8px; border-bottom:2px solid #e5e7eb; text-align:left;">Customer Count Total</th>
-                            </tr>
-                        </thead>
-                        <tbody id="logsTableBody">
-                            <!-- Logs for all 8 sensors, sample data -->
-                            <tr style="background:#f9fafb;">
-                                <td style="padding:8px; border-bottom:1px solid #e5e7eb;">Frozen & Cold</td>
-                                <td style="padding:8px; border-bottom:1px solid #e5e7eb;">2025-09-05 08:00</td>
-                                <td style="padding:8px; border-bottom:1px solid #e5e7eb;">12:00-13:00</td>
-                                <td style="padding:8px; border-bottom:1px solid #e5e7eb;">None</td>
-                                <td style="padding:8px; border-bottom:1px solid #e5e7eb;">5m</td>
-                                <td style="padding:8px; border-bottom:1px solid #e5e7eb;">120</td>
-                            </tr>
-                            <tr>
-                                <td style="padding:8px; border-bottom:1px solid #e5e7eb;">Dry & Packaged Goods</td>
-                                <td style="padding:8px; border-bottom:1px solid #e5e7eb;">2025-09-05 09:00</td>
-                                <td style="padding:8px; border-bottom:1px solid #e5e7eb;">13:00-14:00</td>
-                                <td style="padding:8px; border-bottom:1px solid #e5e7eb;">5 min</td>
-                                <td style="padding:8px; border-bottom:1px solid #e5e7eb;">6m</td>
-                                <td style="padding:8px; border-bottom:1px solid #e5e7eb;">98</td>
-                            </tr>
-                            <tr style="background:#f9fafb;">
-                                <td style="padding:8px; border-bottom:1px solid #e5e7eb;">Household & Non Food</td>
-                                <td style="padding:8px; border-bottom:1px solid #e5e7eb;">2025-09-05 10:00</td>
-                                <td style="padding:8px; border-bottom:1px solid #e5e7eb;">14:00-15:00</td>
-                                <td style="padding:8px; border-bottom:1px solid #e5e7eb;">None</td>
-                                <td style="padding:8px; border-bottom:1px solid #e5e7eb;">4m</td>
-                                <td style="padding:8px; border-bottom:1px solid #e5e7eb;">76</td>
-                            </tr>
-                            <tr>
-                                <td style="padding:8px; border-bottom:1px solid #e5e7eb;">Healthy & Speciality</td>
-                                <td style="padding:8px; border-bottom:1px solid #e5e7eb;">2025-09-05 11:00</td>
-                                <td style="padding:8px; border-bottom:1px solid #e5e7eb;">15:00-16:00</td>
-                                <td style="padding:8px; border-bottom:1px solid #e5e7eb;">None</td>
-                                <td style="padding:8px; border-bottom:1px solid #e5e7eb;">2m</td>
-                                <td style="padding:8px; border-bottom:1px solid #e5e7eb;">200</td>
-                            </tr>
-                            <tr style="background:#f9fafb;">
-                                <td style="padding:8px; border-bottom:1px solid #e5e7eb;">Fresh & Perishables</td>
-                                <td style="padding:8px; border-bottom:1px solid #e5e7eb;">2025-09-05 12:00</td>
-                                <td style="padding:8px; border-bottom:1px solid #e5e7eb;">16:00-17:00</td>
-                                <td style="padding:8px; border-bottom:1px solid #e5e7eb;">None</td>
-                                <td style="padding:8px; border-bottom:1px solid #e5e7eb;">3m</td>
-                                <td style="padding:8px; border-bottom:1px solid #e5e7eb;">65</td>
-                            </tr>
-                            <tr>
-                                <td style="padding:8px; border-bottom:1px solid #e5e7eb;">Extra food & Drink </td>
-                                <td style="padding:8px; border-bottom:1px solid #e5e7eb;">2025-09-05 13:00</td>
-                                <td style="padding:8px; border-bottom:1px solid #e5e7eb;">17:00-18:00</td>
-                                <td style="padding:8px; border-bottom:1px solid #e5e7eb;">None</td>
-                                <td style="padding:8px; border-bottom:1px solid #e5e7eb;">7m</td>
-                                <td style="padding:8px; border-bottom:1px solid #e5e7eb;">150</td>
-                            </tr>
-                            <tr style="background:#f9fafb;">
-                                <td style="padding:8px; border-bottom:1px solid #e5e7eb;">Lifestyle & seasonal </td>
-                                <td style="padding:8px; border-bottom:1px solid #e5e7eb;">2025-09-05 14:00</td>
-                                <td style="padding:8px; border-bottom:1px solid #e5e7eb;">18:00-19:00</td>
-                                <td style="padding:8px; border-bottom:1px solid #e5e7eb;">None</td>
-                                <td style="padding:8px; border-bottom:1px solid #e5e7eb;">2m</td>
-                                <td style="padding:8px; border-bottom:1px solid #e5e7eb;">40</td>
-                            </tr>
-                            <tr>
-                                <td style="padding:8px; border-bottom:1px solid #e5e7eb;">Extra Services</td>
-                                <td style="padding:8px; border-bottom:1px solid #e5e7eb;">2025-09-05 15:00</td>
-                                <td style="padding:8px; border-bottom:1px solid #e5e7eb;">19:00-20:00</td>
-                                <td style="padding:8px; border-bottom:1px solid #e5e7eb;">None</td>
-                                <td style="padding:8px; border-bottom:1px solid #e5e7eb;">3m</td>
-                                <td style="padding:8px; border-bottom:1px solid #e5e7eb;">90</td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-
-        <script>
-        // Logs modal open/close logic
-        document.addEventListener('DOMContentLoaded', function() {
-            var logsBtn = document.getElementById('logsBtn');
-            var logsModal = document.getElementById('logsModal');
-            var closeModal = document.getElementById('closeModal');
             if (logsBtn && logsModal && closeModal) {
                 logsBtn.addEventListener('click', function() {
                     logsModal.style.display = 'flex';
@@ -591,51 +658,95 @@ document.getElementById('resetConfigBtn').addEventListener('click', function() {
                 closeModal.addEventListener('click', function() {
                     logsModal.style.display = 'none';
                 });
+                
+                // Close modal when clicking outside
+                logsModal.addEventListener('click', function(e) {
+                    if (e.target === logsModal) {
+                        logsModal.style.display = 'none';
+                    }
+                });
             }
         });
-        </script>
-<!--Eddited here by  TAkudzwa ---->
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<script>
-  const ctxRadar = document.getElementById('radarChart').getContext('2d');
-  const radarChart = new Chart(ctxRadar, {
-    type: 'radar',
-    data: {
-      labels: ['Battery Health', 'Signal Strength', 'Sensor Uptime', 'Response Speed', 'Error Rate', 'Coverage'],
-      datasets: [
-        {
-          label: 'Today',
-          data: [85, 70, 90, 75, 80, 65],
-          backgroundColor: 'rgba(54, 162, 235, 0.2)',
-          borderColor: 'rgba(54, 162, 235, 1)',
-          pointBackgroundColor: 'rgba(54, 162, 235, 1)',
-          borderWidth: 2
-        },
-        {
-          label: 'Yesterday',
-          data: [60, 65, 80, 70, 75, 50],
-          backgroundColor: 'rgba(255, 99, 132, 0.2)',
-          borderColor: 'rgba(255, 99, 132, 1)',
-          pointBackgroundColor: 'rgba(255, 99, 132, 1)',
-          borderWidth: 2
-        }
-      ]
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      scales: {
-        r: {
-          angleLines: { color: '#ddd' },
-          suggestedMin: 0,
-          suggestedMax: 100
-        }
-      }
-    }
-  });
-  
-</script>
 
+        // Frequency selector functionality
+        function selectFrequency(button) {
+            document.querySelectorAll('[onclick="selectFrequency(this)"]').forEach(btn => {
+                btn.className = 'px-3 py-2 text-sm border border-gray-300 rounded-lg hover:bg-gray-50';
+            });
+            button.className = 'px-3 py-2 text-sm border border-primary bg-primary/10 text-primary rounded-lg';
+        }
 
+        // Configuration save/reset functionality
+        document.addEventListener('DOMContentLoaded', function() {
+            const saveConfigBtn = document.getElementById('saveConfigBtn');
+            const resetConfigBtn = document.getElementById('resetConfigBtn');
+            
+            if (saveConfigBtn) {
+                saveConfigBtn.addEventListener('click', function() {
+                    alert('Configuration saved successfully!');
+                });
+            }
+            
+            if (resetConfigBtn) {
+                resetConfigBtn.addEventListener('click', function() {
+                    document.getElementById('rangeSlider').value = 5;
+                    document.getElementById('rangeValue').textContent = '5';
+                    // Reset frequency buttons
+                    document.querySelectorAll('[onclick="selectFrequency(this)"]').forEach((btn, index) => {
+                        if (index === 1) { // Select 5 Hz by default
+                            btn.className = 'px-3 py-2 text-sm border border-primary bg-primary/10 text-primary rounded-lg';
+                        } else {
+                            btn.className = 'px-3 py-2 text-sm border border-gray-300 rounded-lg hover:bg-gray-50';
+                        }
+                    });
+                    // Reset threshold inputs
+                    document.querySelector('input[type="number"][value="20"]').value = 20;
+                    document.querySelector('input[type="number"][value="50"]').value = 50;
+                });
+            }
+        });
+
+        // Initialize radar chart
+        document.addEventListener('DOMContentLoaded', function() {
+            const ctxRadar = document.getElementById('radarChart');
+            if (ctxRadar) {
+                const radarChart = new Chart(ctxRadar, {
+                    type: 'radar',
+                    data: {
+                        labels: ['Battery Health', 'Signal Strength', 'Sensor Uptime', 'Response Speed', 'Error Rate', 'Coverage'],
+                        datasets: [
+                            {
+                                label: 'Today',
+                                data: [85, 70, 90, 75, 80, 65],
+                                backgroundColor: 'rgba(54, 162, 235, 0.2)',
+                                borderColor: 'rgba(54, 162, 235, 1)',
+                                pointBackgroundColor: 'rgba(54, 162, 235, 1)',
+                                borderWidth: 2
+                            },
+                            {
+                                label: 'Yesterday',
+                                data: [60, 65, 80, 70, 75, 50],
+                                backgroundColor: 'rgba(255, 99, 132, 0.2)',
+                                borderColor: 'rgba(255, 99, 132, 1)',
+                                pointBackgroundColor: 'rgba(255, 99, 132, 1)',
+                                borderWidth: 2
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            r: {
+                                angleLines: { color: '#ddd' },
+                                suggestedMin: 0,
+                                suggestedMax: 100
+                            }
+                        }
+                    }
+                });
+            }
+        });
+    </script>
 </body>
 </html>

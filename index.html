@@ -11,6 +11,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Pacifico&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/remixicon/4.6.0/remixicon.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/echarts/5.5.0/echarts.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="stylesheet" href="/static/css/styles.css">
 </head>
 <body>
@@ -32,7 +33,7 @@
                         </div>
                         <div class="bg-gray-50 rounded-lg p-3 flex items-center justify-between">
                             <span class="text-sm text-gray-600">Today's Peak</span>
-                            <span class="text-lg font-semibold text-blue-600" id="peakSensor">Sensor 2</span>
+                            <span class="text-lg font-semibold text-blue-600">Sensor 2</span>
                         </div>
                     </div>
                 </div>
@@ -66,7 +67,7 @@
             <!-- Radar Chart Section -->
             <div class="card bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
                 <h3 class="text-lg font-semibold text-gray-900 mb-4 text-center">Sensor Performance Radar</h3>
-                <div id="radarChart" class="chart-container h-48"></div>
+                <canvas id="radarChart" width="300" height="300"></canvas>
             </div>
 
             <!-- Configuration and Analytics Section -->
@@ -160,6 +161,549 @@
         </div>
     </div>
 
-    <script src="/static/js/app.js"></script>
+    <script>
+        // Sensor data for cards and charts
+        const sensors = {
+            'ENT-01': {
+                name: 'Frozen & Cold',
+                battery: '87%',
+                signal: 3,
+                color: 'green',
+                traffic: [23, 45, 67, 89, 134, 156, 178, 127],
+                analytics: [1200, 1350, 1180, 1420, 1680, 2100, 1890]
+            },
+            'ELC-01': {
+                name: 'Dry & Packaged Foods',
+                battery: '92%',
+                signal: 4,
+                color: 'green',
+                traffic: [12, 34, 56, 78, 90, 120, 140, 160],
+                analytics: [1100, 1200, 1300, 1400, 1500, 1600, 1700]
+            },
+            'CLO-01': {
+                name: 'Household & Non Food',
+                battery: '80%',
+                signal: 2,
+                color: 'orange',
+                traffic: [10, 20, 30, 40, 50, 60, 70, 80],
+                analytics: [900, 950, 1000, 1050, 1100, 1150, 1200]
+            },
+            'CHK-01': {
+                name: 'Healthy & Speciality',
+                battery: '75%',
+                signal: 3,
+                color: 'green',
+                traffic: [15, 25, 35, 45, 55, 65, 75, 85],
+                analytics: [1000, 1100, 1200, 1300, 1400, 1500, 1600]
+            },
+            'PHR-01': {
+                name: 'Fresh & Perishables',
+                battery: '88%',
+                signal: 4,
+                color: 'green',
+                traffic: [8, 18, 28, 38, 48, 58, 68, 78],
+                analytics: [800, 850, 900, 950, 1000, 1050, 1100]
+            },
+            'GRC-01': {
+                name: 'Extra food & Drinks',
+                battery: '95%',
+                signal: 4,
+                color: 'green',
+                traffic: [20, 40, 60, 80, 100, 120, 140, 160],
+                analytics: [1300, 1350, 1400, 1450, 1500, 1550, 1600]
+            },
+            'FTW-01': {
+                name: 'Lifestyle & Seasonal',
+                battery: '22%',
+                signal: 2,
+                color: 'orange',
+                traffic: [5, 10, 15, 20, 25, 30, 35, 40],
+                analytics: [700, 750, 800, 850, 900, 950, 1000]
+            }
+        };
+
+        function renderSensorCard(sensorId) {
+            const sensor = sensors[sensorId];
+            if (!sensor) return '';
+            let signalHtml = '';
+            for (let i = 0; i < 4; i++) {
+                signalHtml += `<div class="w-1 h-3 ${i < sensor.signal ? 'bg-green-500' : 'bg-gray-300'} rounded-full"></div>`;
+            }
+            return `
+                <div class="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                    <div class="flex items-start justify-between mb-3">
+                        <div>
+                            <h4 class="font-medium text-gray-900">${sensorId}</h4>
+                            <p class="text-sm text-gray-600">${sensor.name}</p>
+                        </div>
+                        <div class="w-3 h-3 bg-${sensor.color}-500 rounded-full"></div>
+                    </div>
+                    <div class="space-y-2 mb-4">
+                        <div class="flex items-center justify-between text-sm">
+                            <span class="text-gray-600">Battery</span>
+                            <span class="text-gray-900 font-medium">${sensor.battery}</span>
+                        </div>
+                        <div class="flex items-center justify-between text-sm">
+                            <span class="text-gray-600">Signal</span>
+                            <div class="flex items-center space-x-1">${signalHtml}</div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderTrafficChart(sensorId) {
+            const trafficChart = echarts.init(document.getElementById('trafficChart'));
+            const sensor = sensors[sensorId];
+            const trafficOption = {
+                animation: false,
+                grid: { top: 20, right: 20, bottom: 40, left: 40 },
+                xAxis: {
+                    type: 'category',
+                    data: ['09:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00'],
+                    axisLabel: { fontSize: 10, color: '#6b7280' }
+                },
+                yAxis: {
+                    type: 'value',
+                    axisLabel: { fontSize: 10, color: '#6b7280' }
+                },
+                series: [{
+                    data: sensor.traffic,
+                    type: 'line',
+                    smooth: true,
+                    lineStyle: { color: '#57B5E7', width: 3 },
+                    itemStyle: { color: '#57B5E7' },
+                    areaStyle: {
+                        color: {
+                            type: 'linear',
+                            x: 0, y: 0, x2: 0, y2: 1,
+                            colorStops: [
+                                { offset: 0, color: 'rgba(87, 181, 231, 0.1)' },
+                                { offset: 1, color: 'rgba(87, 181, 231, 0.01)' }
+                            ]
+                        }
+                    },
+                    showSymbol: false
+                }],
+                tooltip: {
+                    trigger: 'axis',
+                    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                    borderColor: '#e5e7eb',
+                    textStyle: { color: '#1f2937' }
+                }
+            };
+            trafficChart.setOption(trafficOption);
+            
+            // Make chart responsive
+            window.addEventListener('resize', function() {
+                trafficChart.resize();
+            });
+        }
+
+        function renderAnalyticsChart(sensorId) {
+            const analyticsChart = echarts.init(document.getElementById('analyticsChart'));
+            const sensor = sensors[sensorId];
+            const analyticsOption = {
+                animation: false,
+                grid: { top: 20, right: 20, bottom: 40, left: 40 },
+                xAxis: {
+                    type: 'category',
+                    data: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+                    axisLabel: { fontSize: 10, color: '#6b7280' }
+                },
+                yAxis: {
+                    type: 'value',
+                    axisLabel: { fontSize: 10, color: '#6b7280' }
+                },
+                series: [{
+                    data: sensor.analytics,
+                    type: 'bar',
+                    itemStyle: { 
+                        color: '#57B5E7',
+                        borderRadius: [4, 4, 0, 0]
+                    }
+                }],
+                tooltip: {
+                    trigger: 'axis',
+                    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                    borderColor: '#e5e7eb',
+                    textStyle: { color: '#1f2937' }
+                }
+            };
+            analyticsChart.setOption(analyticsOption);
+            
+            // Make chart responsive
+            window.addEventListener('resize', function() {
+                analyticsChart.resize();
+            });
+        }
+
+        function showSensor(sensorId) {
+            document.getElementById('sensorCardContainer').innerHTML = renderSensorCard(sensorId);
+            renderTrafficChart(sensorId);
+            renderAnalyticsChart(sensorId);
+        }
+
+        // Range slider functionality
+        document.addEventListener('DOMContentLoaded', function() {
+            const rangeSlider = document.getElementById('rangeSlider');
+            const rangeValue = document.getElementById('rangeValue');
+            
+            if (rangeSlider && rangeValue) {
+                rangeSlider.addEventListener('input', function() {
+                    rangeValue.textContent = this.value;
+                });
+            }
+
+            // Logs modal functionality
+            var logsBtn = document.getElementById('logsBtn');
+            var logsModal = document.getElementById('logsModal');
+            var closeModal = document.getElementById('closeModal');
+            var logsTableBody = document.getElementById('logsTableBody');
+            var dailyLogs = [
+                { area: 'Sensor 1', date: '2025-09-10', event: 'High activity detected' },
+                { area: 'Sensor 2', date: '2025-09-10', event: 'Medium activity detected' },
+                { area: 'Sensor 3', date: '2025-09-10', event: 'Low activity detected' }
+            ];
+            function renderLogs() {
+                if (!logsTableBody) return;
+                logsTableBody.innerHTML = dailyLogs.map(function(log) {
+                    return `<tr><td>${log.area}</td><td>${log.date}</td><td>${log.event}</td></tr>`;
+                }).join('');
+            }
+            if (logsBtn && logsModal && closeModal) {
+                logsBtn.onclick = function() {
+                    renderLogs();
+                    logsModal.style.display = 'flex';
+                };
+                closeModal.onclick = function() {
+                    logsModal.style.display = 'none';
+                };
+                logsModal.onclick = function(e) {
+                    if (e.target === logsModal) {
+                        logsModal.style.display = 'none';
+                    }
+                };
+            }
+
+            // Show Entrance card by default
+            showSensor('ENT-01');
+            document.getElementById('sensorFilter').value = 'ENT-01';
+
+            document.getElementById('sensorFilter').addEventListener('change', function() {
+                showSensor(this.value);
+            });
+            
+            document.getElementById('refreshBtn').addEventListener('click', function() {
+                showSensor('ENT-01');
+                document.getElementById('sensorFilter').value = 'ENT-01';
+            });
+
+
+            // Update Today's Peak in Quick Overview
+            const peakElem = document.querySelector('.sidebar .grid .bg-gray-50:nth-child(2) span.text-lg');
+            if (peakElem) {
+                peakElem.textContent = getPeakSensor();
+            }
+        });
+
+        // Frequency selector functionality
+        function selectFrequency(button) {
+            document.querySelectorAll('[onclick="selectFrequency(this)"]').forEach(btn => {
+                btn.className = 'px-3 py-2 text-sm border border-gray-300 rounded-lg hover:bg-gray-50';
+            });
+            button.className = 'px-3 py-2 text-sm border border-primary bg-primary/10 text-primary rounded-lg';
+        }
+
+        // Configuration save/reset functionality
+        document.addEventListener('DOMContentLoaded', function() {
+            const saveConfigBtn = document.getElementById('saveConfigBtn');
+            const resetConfigBtn = document.getElementById('resetConfigBtn');
+            
+            if (saveConfigBtn) {
+                saveConfigBtn.addEventListener('click', function() {
+                    alert('Configuration saved successfully!');
+                });
+            }
+            
+            if (resetConfigBtn) {
+                resetConfigBtn.addEventListener('click', function() {
+                    document.getElementById('rangeSlider').value = 5;
+                    document.getElementById('rangeValue').textContent = '5';
+                    // Reset frequency buttons
+                    document.querySelectorAll('[onclick="selectFrequency(this)"]').forEach((btn, index) => {
+                        if (index === 1) { // Select 5 Hz by default
+                            btn.className = 'px-3 py-2 text-sm border border-primary bg-primary/10 text-primary rounded-lg';
+                        } else {
+                            btn.className = 'px-3 py-2 text-sm border border-gray-300 rounded-lg hover:bg-gray-50';
+                        }
+                    });
+                    // Reset threshold inputs
+                    document.querySelector('input[type="number"][value="20"]').value = 20;
+                    document.querySelector('input[type="number"][value="50"]').value = 50;
+                });
+            }
+        });
+
+        // Initialize radar chart
+        document.addEventListener('DOMContentLoaded', function() {
+            const ctxRadar = document.getElementById('radarChart');
+            if (ctxRadar) {
+                const radarChart = new Chart(ctxRadar, {
+                    type: 'radar',
+                    data: {
+                        labels: ['Battery Health', 'Signal Strength', 'Sensor Uptime', 'Response Speed', 'Error Rate', 'Coverage'],
+                        datasets: [
+                            {
+                                label: 'Today',
+                                data: [85, 70, 90, 75, 80, 65],
+                                backgroundColor: 'rgba(54, 162, 235, 0.2)',
+                                borderColor: 'rgba(54, 162, 235, 1)',
+                                pointBackgroundColor: 'rgba(54, 162, 235, 1)',
+                                borderWidth: 2
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            r: {
+                                angleLines: { color: '#ddd' },
+                                suggestedMin: 0,
+                                suggestedMax: 100
+                            }
+                        }
+                    }
+                });
+            }
+        });
+
+        // Radar chart data for three sensors
+        const radarLabels = ["Sensor 1", "Sensor 2", "Sensor 3"];
+        const radarData = [80, 65, 90]; // Example performance scores for each sensor
+
+        function renderRadarChart() {
+            const ctx = document.getElementById('radarChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'radar',
+                data: {
+                    labels: radarLabels,
+                    datasets: [{
+                        label: 'Performance',
+                        data: radarData,
+                        backgroundColor: 'rgba(37, 99, 235, 0.2)',
+                        borderColor: '#2563eb',
+                        pointBackgroundColor: '#2563eb'
+                    }]
+                },
+                options: {
+                    scales: {
+                        r: {
+                            min: 0,
+                            max: 100,
+                            ticks: { stepSize: 20 }
+                        }
+                    },
+                    plugins: {
+                        legend: { display: false }
+                    }
+                }
+            });
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            renderRadarChart();
+            // ...existing code...
+        });
+
+        // Example digital sensor analytics data
+        const sensorActivations = [12, 7, 15]; // Number of activations for each sensor today
+        const sensorLabels = ["Sensor 1", "Sensor 2", "Sensor 3"];
+
+        // Calculate percentage values for bar chart
+        const totalActivations = sensorActivations.reduce((a, b) => a + b, 0);
+        const sensorPercentages = sensorActivations.map(v => totalActivations ? Math.round((v / totalActivations) * 100) : 0);
+
+        // Render bar chart for activations (percentage)
+        function renderDigitalBarChart() {
+            const chartDom = document.getElementById('digitalBarChart');
+            if (!chartDom) return;
+            const myChart = echarts.init(chartDom);
+            const option = {
+                xAxis: {
+                    type: 'category',
+                    data: sensorLabels
+                },
+                yAxis: {
+                    type: 'value',
+                    name: 'Activations (%)',
+                    min: 0,
+                    max: 100,
+                    axisLabel: { formatter: '{value}%' }
+                },
+                series: [{
+                    data: sensorPercentages,
+                    type: 'bar',
+                    itemStyle: { color: '#2563eb' }
+                }],
+                tooltip: { trigger: 'axis', formatter: params => `${params[0].name}: ${params[0].value}%` }
+            };
+            myChart.setOption(option);
+        }
+
+        // Render pie chart for activity distribution
+        function renderDigitalPieChart() {
+            const chartDom = document.getElementById('digitalPieChart');
+            if (!chartDom) return;
+            const myChart = echarts.init(chartDom);
+            const total = sensorActivations.reduce((a, b) => a + b, 0);
+            const option = {
+                series: [{
+                    name: 'Activity',
+                    type: 'pie',
+                    radius: '60%',
+                    data: sensorLabels.map((label, i) => ({ value: sensorActivations[i], name: label })),
+                    label: {
+                        formatter: function(params) {
+                            const percent = total ? Math.round((params.value / total) * 100) : 0;
+                            return `${params.name}: ${percent}%`;
+                        }
+                    }
+                }],
+                tooltip: { trigger: 'item', formatter: function(params) {
+                    const percent = total ? Math.round((params.value / total) * 100) : 0;
+                    return `${params.name}: ${params.value} (${percent}%)`;
+                } }
+            };
+            myChart.setOption(option);
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            renderDigitalBarChart();
+            renderDigitalPieChart();
+            // ...existing code...
+        });
+
+        // Example data for sensor analytics (low, medium, high events per weekday)
+        const weekDays = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+        const lowEvents = [
+            [2, 1, 3, 2, 1, 2, 1], // Sensor 1
+            [1, 2, 1, 2, 2, 1, 2], // Sensor 2
+            [3, 2, 2, 3, 2, 3, 2]  // Sensor 3
+        ];
+        const mediumEvents = [
+            [5, 4, 6, 5, 4, 5, 4], // Sensor 1
+            [4, 5, 4, 5, 5, 4, 5], // Sensor 2
+            [6, 5, 5, 6, 5, 6, 5]  // Sensor 3
+        ];
+        const highEvents = [
+            [1, 1, 2, 1, 1, 1, 1], // Sensor 1
+            [2, 2, 1, 2, 2, 2, 2], // Sensor 2
+            [1, 2, 1, 2, 1, 2, 1]  // Sensor 3
+        ];
+        function renderAnalyticsBarChart() {
+            const chartDom = document.getElementById('analyticsBarChart');
+            if (!chartDom) return;
+            const myChart = echarts.init(chartDom);
+            const option = {
+                tooltip: { trigger: 'axis' },
+                legend: { data: ['Low', 'Medium', 'High'] },
+                xAxis: {
+                    type: 'category',
+                    data: weekDays
+                },
+                yAxis: {
+                    type: 'value',
+                    name: 'Event Level',
+                    min: 0,
+                    max: 10
+                },
+                series: [
+                    {
+                        name: 'Low',
+                        type: 'line',
+                        smooth: true,
+                        data: weekDays.map((_, i) => lowEvents[0][i] + lowEvents[1][i] + lowEvents[2][i]),
+                        lineStyle: { color: '#8DD3C7', width: 2 },
+                        itemStyle: { color: '#8DD3C7' }
+                    },
+                    {
+                        name: 'Medium',
+                        type: 'line',
+                        smooth: true,
+                        data: weekDays.map((_, i) => mediumEvents[0][i] + mediumEvents[1][i] + mediumEvents[2][i]),
+                        lineStyle: { color: '#2563eb', width: 2 },
+                        itemStyle: { color: '#2563eb' }
+                    },
+                    {
+                        name: 'High',
+                        type: 'line',
+                        smooth: true,
+                        data: weekDays.map((_, i) => highEvents[0][i] + highEvents[1][i] + highEvents[2][i]),
+                        lineStyle: { color: '#FFB347', width: 2 },
+                        itemStyle: { color: '#FFB347' }
+                    }
+                ]
+            };
+            myChart.setOption(option);
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            renderAnalyticsBarChart();
+            // ...existing code...
+        });
+
+        // Data for average dwell time (in minutes) for three sensors
+        const dwellTimes = [2.5, 3.1, 1.8]; // Example dwell times for Sensor 1, 2, 3
+
+        function renderDwellBarChart() {
+            const chartDom = document.getElementById('dwellBarChart');
+            if (!chartDom) return;
+            const myChart = echarts.init(chartDom);
+            const option = {
+                xAxis: {
+                    type: 'category',
+                    data: sensorLabels
+                },
+                yAxis: {
+                    type: 'value',
+                    name: 'Avg. Dwell Time (min)',
+                    min: 0,
+                    max: 5
+                },
+                series: [{
+                    data: dwellTimes,
+                    type: 'bar',
+                    itemStyle: { color: '#8DD3C7' }
+                }],
+                tooltip: { trigger: 'axis', formatter: params => `${params[0].name}: ${params[0].value} min` }
+            };
+            myChart.setOption(option);
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            renderDwellBarChart();
+            renderDigitalPieChart();
+            renderAnalyticsBarChart();
+            renderRadarChart();
+            // ...existing code...
+        });
+
+        function getPeakSensor() {
+            const total = sensorActivations.reduce((a, b) => a + b, 0);
+            const percentages = sensorActivations.map(v => total ? (v / total) * 100 : 0);
+            const maxIndex = percentages.indexOf(Math.max(...percentages));
+            return `${sensorLabels[maxIndex]} (${Math.round(percentages[maxIndex])}%)`;
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            // Update Today's Peak in Quick Overview
+            const peakElem = document.querySelector('.sidebar .grid .bg-gray-50:nth-child(2) span.text-lg');
+            if (peakElem) {
+                peakElem.textContent = getPeakSensor();
+            }
+        });
+    </script>
 </body>
 </html>

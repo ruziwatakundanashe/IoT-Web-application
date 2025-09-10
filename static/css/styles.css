@@ -1,0 +1,239 @@
+body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    background: #f7f7f7;
+}
+
+/* Desktop Layout */
+.main-layout {
+    display: flex;
+    min-height: 100vh;
+    flex-direction: row;
+}
+
+.sidebar {
+    flex: 0 0 320px;
+    background: #e9ecef;
+    border-right: 1px solid #ddd;
+}
+
+.main-content {
+    flex: 1;
+    padding: 24px;
+    background: #fff;
+}
+
+/* Mobile Responsive Styles */
+@media (max-width: 768px) {
+    .main-layout {
+        display: block !important;
+        flex-direction: column !important;
+    }
+    
+    .sidebar {
+        flex: none !important;
+        width: 100% !important;
+        position: static !important;
+        border-right: none !important;
+        border-bottom: 1px solid #ddd;
+    }
+    
+    .main-content {
+        padding: 16px 12px !important;
+    }
+    
+    /* Stack all grid layouts vertically */
+    .grid {
+        display: block !important;
+    }
+    
+    .grid > * {
+        margin-bottom: 16px !important;
+    }
+    
+    /* Make charts responsive */
+    .chart-container {
+        height: 200px !important;
+    }
+    
+    /* Adjust card padding for mobile */
+    .card {
+        padding: 16px !important;
+        margin-bottom: 16px !important;
+    }
+    
+    /* Make tables scroll horizontally */
+    .table-container {
+        overflow-x: auto !important;
+        -webkit-overflow-scrolling: touch;
+    }
+    
+    /* Adjust modal for mobile */
+    .modal-content {
+        margin: 20px !important;
+        max-height: 80vh !important;
+        overflow-y: auto !important;
+    }
+    
+    /* Stack form elements vertically */
+    .form-row {
+        flex-direction: column !important;
+        gap: 8px !important;
+    }
+    
+    .form-row > * {
+        width: 100% !important;
+    }
+    
+    /* Adjust button sizes for touch */
+    button {
+        min-height: 44px !important;
+        padding: 12px 16px !important;
+    }
+    
+    /* Make select dropdowns touch-friendly */
+    select {
+        min-height: 44px !important;
+        padding: 12px !important;
+    }
+    
+    /* Adjust input sizes */
+    input[type="range"] {
+        height: 44px !important;
+    }
+    
+    input[type="number"] {
+        min-height: 44px !important;
+        padding: 12px !important;
+    }
+}
+
+/* Extra small screens */
+@media (max-width: 480px) {
+    .main-content {
+        padding: 12px 8px !important;
+    }
+    
+    .card {
+        padding: 12px !important;
+    }
+    
+    h1 {
+        font-size: 1.5rem !important;
+    }
+    
+    h3 {
+        font-size: 1.1rem !important;
+    }
+    
+    .modal-content {
+        margin: 10px !important;
+    }
+}
+
+#radarChart {
+    max-width: 100%;
+    max-height: 300px;
+    margin: 0 auto;
+}
+
+@media (max-width: 768px) {
+    #radarChart {
+        max-height: 250px;
+    }
+}
+
+/* Logs Modal Styles */
+#logsModal {
+    display: none;
+    position: fixed;
+    inset: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.7);
+    z-index: 999999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+#logsModal .modal-content {
+    background: #fff;
+    border-radius: 16px;
+    padding: 32px;
+    min-width: 400px;
+    max-width: 520px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.18);
+    position: relative;
+}
+
+#logsModal .modal-content h3 {
+    margin: 0 0 18px 0;
+    font-size: 1.35rem;
+    font-weight: 600;
+    color: #2563eb;
+}
+
+#logsModal .modal-content label {
+    font-weight: 500;
+    color: #2563eb;
+}
+
+#logsModal .modal-content input[type="date"] {
+    padding: 6px 12px;
+    border: 1px solid #e5e7eb;
+    border-radius: 6px;
+    font-size: 1rem;
+    flex: 1;
+    min-width: 150px;
+}
+
+#logsModal .modal-content button {
+    padding: 6px 18px;
+    border-radius: 6px;
+    font-size: 1rem;
+    font-weight: 500;
+    cursor: pointer;
+}
+
+#logsModal .modal-content button#searchLogsBtn {
+    background: #2563eb;
+    color: #fff;
+    border: none;
+}
+
+#logsModal .modal-content button#showAllLogsBtn {
+    background: #8DD3C7;
+    color: #222;
+    border: none;
+}
+
+#logsModal .modal-content table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 12px;
+}
+
+#logsModal .modal-content th,
+#logsModal .modal-content td {
+    padding: 10px 8px;
+    border-bottom: 2px solid #e5e7eb;
+    text-align: left;
+    white-space: nowrap;
+}
+
+#logsModal .modal-content tbody tr:hover {
+    background: #f1f5f9;
+}
+
+#logsModal .modal-content button#closeModal {
+    background: none;
+    border: none;
+    color: #2563eb;
+    font-size: 2rem;
+    cursor: pointer;
+    line-height: 1;
+    position: absolute;
+    top: 12px;
+    right: 18px;
+}

@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Store Tracker - Customer traffic heatmap and analytics</title>
+    <script src="https://cdn.tailwindcss.com/3.4.16"></script>
+    <script>tailwind.config={theme:{extend:{colors:{primary:'#57B5E7',secondary:'#8DD3C7'},borderRadius:{'none':'0px','sm':'4px',DEFAULT:'8px','md':'12px','lg':'16px','xl':'20px','2xl':'24px','3xl':'32px','full':'9999px','button':'8px'}}}}</script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Pacifico&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/remixicon/4.6.0/remixicon.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/echarts/5.5.0/echarts.min.js"></script>
+    <link rel="stylesheet" href="/static/css/styles.css">
+</head>
+<body>
+    <!-- Header: Application Title -->
+    <header class="w-full bg-white py-4 px-4 md:px-8 flex items-center shadow-sm sticky top-0 z-50">
+        <h1 class="text-xl md:text-2xl lg:text-3xl font-bold tracking-wide text-black" style="font-family: 'Times New Roman', Times, serif;">Smart Store Tracker</h1>
+    </header>
+
+    <div class="main-layout">
+        <!-- Sidebar: Quick Overview -->
+        <aside class="sidebar">
+            <div class="space-y-6">
+                <div>
+                    <h3 class="text-sm font-medium text-gray-900 mb-3">Quick Overview</h3>
+                    <div class="grid grid-cols-1 gap-4">
+                        <div class="bg-gray-50 rounded-lg p-3 flex items-center justify-between">
+                            <span class="text-sm text-gray-600">Current Traffic</span>
+                            <span class="text-lg font-semibold text-green-600">67%</span>
+                        </div>
+                        <div class="bg-gray-50 rounded-lg p-3 flex items-center justify-between">
+                            <span class="text-sm text-gray-600">Today's Peak</span>
+                            <span class="text-lg font-semibold text-blue-600" id="peakSensor">Sensor 2</span>
+                        </div>
+                    </div>
+                </div>
+                <div>
+                    <h3 class="text-sm font-medium text-gray-900 mb-3">System Status</h3>
+                    <div class="bg-gray-50 rounded-lg p-3 flex items-center justify-between">
+                        <span class="text-sm text-gray-600">Sensors Online</span>
+                        <span class="text-lg font-semibold text-green-600">3</span>
+                    </div>
+                </div>
+                <div class="mt-4 flex justify-center">
+                    <button id="logsBtn" class="px-4 py-2 rounded-lg bg-primary text-white font-semibold shadow hover:bg-blue-600 transition">Logs</button>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Charts Section -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+                <div class="card bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4">Average Dwell Time (min)</h3>
+                    <div class="chart-container h-48" id="dwellBarChart"></div>
+                </div>
+                <div class="card bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4">Sensor Activity Distribution</h3>
+                    <div class="chart-container h-48" id="digitalPieChart"></div>
+                </div>
+            </div>
+
+            <!-- Radar Chart Section -->
+            <div class="card bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4 text-center">Sensor Performance Radar</h3>
+                <div id="radarChart" class="chart-container h-48"></div>
+            </div>
+
+            <!-- Configuration and Analytics Section -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <!-- Sensor Configuration -->
+                <div class="card bg-white rounded-lg shadow-sm border border-gray-200 p-6" id="sensor-config">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-lg font-semibold text-gray-900">Sensor Configuration</h3>
+                        <button class="text-primary text-sm font-medium">Configure</button>
+                    </div>
+                    <div class="space-y-6">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Detection Range (meters)</label>
+                            <div class="relative">
+                                <input type="range" min="1" max="10" value="5" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer" id="rangeSlider">
+                                <div class="flex justify-between text-xs text-gray-500 mt-1">
+                                    <span>1m</span>
+                                    <span>10m</span>
+                                </div>
+                            </div>
+                            <div class="mt-2 text-sm text-gray-600">Current: <span id="rangeValue">5</span>m</div>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Sampling Frequency</label>
+                            <div class="grid grid-cols-3 gap-2">
+                                <button class="px-3 py-2 text-sm border border-gray-300 rounded-lg hover:bg-gray-50" onclick="selectFrequency(this)">1 Hz</button>
+                                <button class="px-3 py-2 text-sm border border-primary bg-primary/10 text-primary rounded-lg" onclick="selectFrequency(this)">5 Hz</button>
+                                <button class="px-3 py-2 text-sm border border-gray-300 rounded-lg hover:bg-gray-50" onclick="selectFrequency(this)">10 Hz</button>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Alert Thresholds</label>
+                            <div class="space-y-3">
+                                <div class="form-row flex items-center justify-between">
+                                    <span class="text-sm text-gray-600">Low Battery Warning</span>
+                                    <div class="flex items-center space-x-2">
+                                        <input type="number" value="20" class="w-16 px-2 py-1 border border-gray-300 rounded text-sm text-center">
+                                        <span class="text-sm text-gray-600">%</span>
+                                    </div>
+                                </div>
+                                <div class="form-row flex items-center justify-between">
+                                    <span class="text-sm text-gray-600">High Traffic Alert</span>
+                                    <div class="flex items-center space-x-2">
+                                        <input type="number" value="50" class="w-16 px-2 py-1 border border-gray-300 rounded text-sm text-center">
+                                        <span class="text-sm text-gray-600">people</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="flex flex-col sm:flex-row items-center space-y-2 sm:space-y-0 sm:space-x-3 pt-4">
+                            <button id="saveConfigBtn" class="w-full sm:flex-1 bg-primary text-white py-2 px-4 rounded-button font-medium">Save Configuration</button>
+                            <button id="resetConfigBtn" class="w-full sm:w-auto px-4 py-2 border border-gray-300 text-gray-700 rounded-button font-medium">Reset</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- System Analytics -->
+                <div class="card bg-white rounded-lg shadow-sm border border-gray-200 p-6" id="system-analytics">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4">Sensor Analytics</h3>
+                    <div class="chart-container h-64" id="analyticsBarChart"></div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Logs Modal (single instance, hidden by default, opens on button click) -->
+    <div id="logsModal" style="display:none; position:fixed; inset:0; width:100vw; height:100vh; background:rgba(0,0,0,0.7); z-index:999999; align-items:center; justify-content:center;">
+        <div class="modal-content" style="background:#fff; border-radius:16px; padding:32px; min-width:400px; max-width:520px; box-shadow:0 8px 32px rgba(0,0,0,0.18); position:relative;">
+            <button id="closeModal" style="background:none; border:none; color:#2563eb; font-size:2rem; cursor:pointer; line-height:1; position:absolute; top:12px; right:18px;">&times;</button>
+            <h3>Sensor Area Daily Logs</h3>
+            <div style="margin-bottom:18px; display:flex; gap:12px; align-items:center;">
+                <label for="logDateSearch">Search by Date:</label>
+                <input type="date" id="logDateSearch">
+                <button id="searchLogsBtn">Search</button>
+                <button id="showAllLogsBtn">Show All</button>
+            </div>
+            <div style="overflow-y: auto; max-height: 50vh; overflow-x: auto;">
+                <table style="width:100%; border-collapse:collapse;">
+                    <thead>
+                        <tr>
+                            <th>Sensor Area Name</th>
+                            <th>Date</th>
+                            <th>Event</th>
+                        </tr>
+                    </thead>
+                    <tbody id="logsTableBody">
+                        <!-- Log rows will be rendered here -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/js/app.js"></script>
+</body>
+</html>
